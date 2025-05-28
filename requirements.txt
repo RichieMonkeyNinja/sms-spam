@@ -8,3 +8,5 @@ torch
 nltk
 datasets
 wordcloud
+xgboost
+torch
