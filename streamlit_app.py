@@ -1,53 +1,51 @@
 import streamlit as st
 import joblib
-import numpy as np
 import pandas as pd
+from Function import extract_cls_embeddings  # Your CLS embedding function
 
-# Import CLS Embeddings Extraction Function
-from Function import extract_cls_embeddings
+# Sidebar: External links + classification history
+with st.sidebar:
+    st.markdown("[Learn more about BERT here](https://en.wikipedia.org/wiki/BERT_(language_model))")
+    st.markdown("[Learn more about TF-IDF here](https://en.wikipedia.org/wiki/Tf%E2%80%93idf#:~:text=In%20information%20retrieval%2C%20tf%E2%80%93idf,appear%20more%20frequently%20in%20general.)")
+    st.markdown("[View the source code](https://github.com/RichieMonkeyNinja)")
+    st.markdown("---")
+    st.markdown("**Classification History (Last 5)**")
 
-# Load the trained model
-# Custom background style
-st.markdown("""
-    <style>
-    body {
-        background-color: #e6e6e6;
-    }
-    </style>
-    """, unsafe_allow_html=True)
+# Load your spam classifier model
+model = joblib.load("best_lr_model.pkl")
 
-st.spinner("Loading BERT... please wait")
-st.title('Spam Classifier using BERT + Logistic Regression')
-st.write('Enter a message to see the classification in action')
-st.image("spam_image.png", width=120, caption="An example image")
+# Initialize chat and classification history
+if "messages" not in st.session_state:
+    st.session_state["messages"] = [{"role": "assistant", "content": "Paste an SMS and I'll classify it as SPAM or HAM."}]
 
+# if "history_table" not in st.session_state:
+#     st.session_state["history_table"] = pd.DataFrame(columns=["Message", "Label", "Confidence (%)"])
+    
+# Display chat history
+for msg in st.session_state.messages:
+    st.chat_message(msg["role"]).write(msg["content"])
 
-# Initialize classification history
-if 'history' not in st.session_state:
-    st.session_state['history'] = pd.DataFrame(columns=['Message', 'Prediction'])
+# Handle user input
+if prompt := st.chat_input("Type your SMS here..."):
+    st.session_state.messages.append({"role": "user", "content": prompt})
+    st.chat_message("user").write(prompt)
 
-# User input
-user_input = st.text_area('Message', height=150)
+    try:
+        # Extract CLS embedding
+        embedding = extract_cls_embeddings(prompt)
 
-# Predict button
-if st.button("Classify"):
-    if not user_input.strip():
-        st.warning("Please enter a message to classify.")
-    else:
-        try:
-            embedding = extract_cls_embeddings(user_input)
-            prediction = model.predict(embedding)
-            label = "SPAM" if prediction == 1 else "HAM"
+        # Predict using your model
+        prediction = model.predict(embedding)[0]
+        confidence = model.predict_proba(embedding)[0][prediction] * 100
+        label = "SPAM" if prediction == 1 else "HAM"
 
-            # Append to history (limit to top 5 latest)
-            new_row = pd.DataFrame({'Message': [user_input], 'Prediction': [label]})
-            st.session_state['history'] = pd.concat([new_row, st.session_state['history']]).head(5)
+        # Response with confidence
+        response = f"This message is classified as **{label}** with {confidence:.2f}% confidence."
 
-            st.success(f"Prediction: {label}")
+        # , use_container_width=True, height = 200)
 
-        except Exception as e:
-            st.error(f"Error during prediction: {e}")
+    except Exception as e:
+        response = f"Error during classification: {e}"
 
-# Display history
-st.subheader("Classification History (Last 5)")
-st.dataframe(st.session_state['history'], use_container_width=True)
+    st.session_state.messages.append({"role": "assistant", "content": response})
+    st.chat_message("assistant").write(response)
