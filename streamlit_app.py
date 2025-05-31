@@ -2,11 +2,14 @@ import streamlit as st
 import joblib
 import pandas as pd
 import nltk
+import torch
 nltk.download('stopwords')
 nltk.download('punkt')
 nltk.download('wordnet')
 from Function import extract_cls_embeddings  # Your CLS embedding function
 from Function import preprocess
+
+torch.classes.__path__ = []
 
 # Sidebar: External links + classification history
 with st.sidebar:
