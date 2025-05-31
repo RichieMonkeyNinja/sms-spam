@@ -2,6 +2,7 @@ import streamlit as st
 import joblib
 import pandas as pd
 from Function import extract_cls_embeddings  # Your CLS embedding function
+from Function import preprocess
 
 # Sidebar: External links + classification history
 with st.sidebar:
@@ -12,7 +13,9 @@ with st.sidebar:
     st.markdown("**Classification History (Last 5)**")
 
 # Load your spam classifier model
-model = joblib.load("best_lr_model.pkl")
+lr_model = joblib.load("best_lr_model.pkl")
+mnb_model = joblib.load('best_mnb.pkl')
+vectorizer = joblib.load('tfidf_vectorizer.pkl')
 
 # Initialize chat and classification history
 if "messages" not in st.session_state:
@@ -31,21 +34,29 @@ if prompt := st.chat_input("Type your SMS here..."):
     st.chat_message("user").write(prompt)
 
     try:
-        # Extract CLS embedding
+        # Extract CLS embedding and TF-IDF vector
         embedding = extract_cls_embeddings(prompt)
+        clean_sms = preprocess(prompt)
+        vectors = vectorizer.transform([clean_sms])
 
         # Predict using your model
-        prediction = model.predict(embedding)[0]
-        confidence = model.predict_proba(embedding)[0][prediction] * 100
-        label = "SPAM" if prediction == 1 else "HAM"
+        prediction_bert = lr_model.predict(embedding)[0]
+        confidence_bert = lr_model.predict_proba(embedding)[0][prediction_bert] * 100
+        label_bert = "SPAM" if prediction_bert == 1 else "HAM"
+
+        prediction_tfidf = mnb_model.predict(vectors)[0]
+        confidence_tfidf = mnb_model.predict_proba(vectors)[0][prediction_tfidf] * 100
+        label_tfidf = "SPAM" if prediction_tfidf == 1 else "HAM"
 
         # Response with confidence
-        response = f"This message is classified as **{label}** with {confidence:.2f}% confidence."
-
+        response_bert = f"This message is classified as **{label_bert}** with {confidence_bert:.2f}% confidence by BERT + Logistic Regression."
+        response_tfidf = f"This message is classified as **{label_tfidf}** with {confidence_tfidf:.2f}% confidence by TF-IDF + SVM."
         # , use_container_width=True, height = 200)
 
     except Exception as e:
-        response = f"Error during classification: {e}"
+        response_bert = f"Error during classification: {e}"
 
-    st.session_state.messages.append({"role": "assistant", "content": response})
-    st.chat_message("assistant").write(response)
+    st.session_state.messages.append({"role": "assistant", "content": response_bert, 'name':'BERT Assistant'})
+    st.session_state.messages.append({"role": "assistant", "content": response_tfidf, 'name':'TF-IDF Assistant'})    
+    st.chat_message("assistant").write(response_bert)
+    st.chat_message("assistant").write(response_tfidf)    
