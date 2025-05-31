@@ -5,7 +5,7 @@ from transformers import BertTokenizer, BertModel
 import torch
 import nltk 
 nltk.download('stopwords')
-nltk.downloaSd('punkt')
+nltk.download('punkt')
 nltk.download('wordnet')
 from nltk.corpus import stopwords
 from nltk.stem import WordNetLemmatizer
