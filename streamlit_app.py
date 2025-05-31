@@ -62,6 +62,7 @@ if prompt := st.chat_input("Type your SMS here..."):
 
     except Exception as e:
         response_bert = f"Error during classification: {e}"
+        response_tfidf = f"Error during classification: {e}"
 
     st.session_state.messages.append({"role": "assistant", "content": response_bert, 'name':'BERT Assistant'})
     st.session_state.messages.append({"role": "assistant", "content": response_tfidf, 'name':'TF-IDF Assistant'})    
