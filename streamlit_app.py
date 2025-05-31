@@ -3,6 +3,8 @@ import joblib
 import pandas as pd
 from Function import extract_cls_embeddings  # Your CLS embedding function
 from Function import preprocess
+import nltk
+nltk.download('stopwords')
 
 # Sidebar: External links + classification history
 with st.sidebar:
