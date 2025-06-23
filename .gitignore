@@ -1,3 +1,5 @@
 /.venv
 /test.ipynb
 /test.txt
+/__pychache__
+/*.png
